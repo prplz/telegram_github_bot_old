@@ -31,17 +31,18 @@ def github_hook(request):
 
     json_body = json.loads(body.decode("utf-8"))
 
-    if len(json_body["commits"]) == 0:
+    commits = json_body["commits"]
+    if len(commits) == 0:
         return "OK"
 
     # pusher
     text = "<b>%s</b>" % json_body["pusher"]["name"]
 
     # how many commits
-    if len(json_body["commits"]) == 1:
+    if len(commits) == 1:
         text += " pushed to "
     else:
-        text += " pushed %d commits to " % len(json_body["commits"])
+        text += " pushed %d commits to " % len(commits)
 
     # branch
     branch = json_body["ref"].split("/")[-1]
@@ -55,16 +56,19 @@ def github_hook(request):
     )
 
     # commits
-    for commit in json_body["commits"]:
+    commits_end = 9 if len(commits) > 10 else len(commits)
+    for commit in commits[:commits_end]:
         # only use first line
         message = commit["message"].split("\n")[0]
         text += "\n<code>%s</code> %s" % (commit["id"][:7], message)
+    if commits_end < len(commits):
+        text += "\n+%d more" % (len(commits) - commits_end)
 
     # link
     text += "\n"
     text += github_shorten(
         json_body["head_commit"]["url"]
-        if len(json_body["commits"]) == 1
+        if len(commits) == 1
         else json_body["compare"]
     )
 
