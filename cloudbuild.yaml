@@ -1,3 +1,9 @@
 steps:
 - name: 'gcr.io/cloud-builders/gcloud'
-  args: ['functions', 'deploy', 'telegram_github_bot', '--runtime', 'python37', '--trigger-http']
+  args:
+  - functions
+  - deploy
+  - telegram_github_bot
+  - --source=.
+  - --trigger-http
+  - --runtime=python37
