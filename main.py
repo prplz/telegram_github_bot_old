@@ -60,17 +60,13 @@ def github_hook(request):
     for commit in commits[:commits_end]:
         # only use first line
         message = commit["message"].split("\n")[0]
-        text += "\n<code>%s</code> %s" % (commit["id"][:7], message)
+        text += '\n<a href="%s">%s</a> %s' % (commit["url"], commit["id"][:7], message)
     if commits_end < len(commits):
         text += "\n+%d more" % (len(commits) - commits_end)
 
-    # link
-    text += "\n"
-    text += github_shorten(
-        json_body["head_commit"]["url"]
-        if len(commits) == 1
-        else json_body["compare"]
-    )
+    # compare link
+    if len(commits) > 1:
+        text += '\n<a href="%s">Compare</a>' % json_body["compare"]
 
     requests.post(
         "https://api.telegram.org/%s/sendMessage" % telegram_key,
@@ -83,12 +79,3 @@ def github_hook(request):
     )
 
     return "OK"
-
-
-def github_shorten(u):
-    return (
-        requests.post("https://git.io", data={"url": u})
-        .headers["Location"]
-        .replace("https://", "")
-    )
-
