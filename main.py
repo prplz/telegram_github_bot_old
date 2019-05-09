@@ -36,40 +36,37 @@ def github_hook(request):
         return "OK"
 
     # pusher
-    text = "<b>%s</b>" % json_body["pusher"]["name"]
+    text = f'<a href="{json_body["sender"]["html_url"]}">{json_body["pusher"]["name"]}</a>'
 
     # how many commits
     if len(commits) == 1:
         text += " pushed to "
     else:
-        text += " pushed %d commits to " % len(commits)
+        text += f" pushed {len(commits)} commits to "
 
     # branch
     branch = json_body["ref"].split("/")[-1]
     if branch != "master":
-        text += "branch <b>%s</b> on " % branch
+        text += f'branch <a href="{json_body["repository"]["url"]}/{branch}">{branch}</a> on '
 
     # repo (link)
-    text += '<a href="%s">%s</a>' % (
-        json_body["repository"]["url"],
-        json_body["repository"]["full_name"],
-    )
+    text += f'<a href="{json_body["repository"]["url"]}">{json_body["repository"]["full_name"]}</a>'
 
     # commits
     commits_end = 9 if len(commits) > 10 else len(commits)
     for commit in commits[:commits_end]:
         # only use first line
         message = commit["message"].split("\n")[0]
-        text += '\n<a href="%s">%s</a> %s' % (commit["url"], commit["id"][:7], message)
+        text += f'\n<a href="{commit["url"]}">{commit["id"][:7]}</a> {message}'
     if commits_end < len(commits):
-        text += "\n+%d more" % (len(commits) - commits_end)
+        text += f"\n+{len(commits) - commits_end} more"
 
     # compare link
     if len(commits) > 1:
-        text += '\n<a href="%s">Compare</a>' % json_body["compare"]
+        text += f'\n<a href="{json_body["compare"]}">Compare</a>'
 
     requests.post(
-        "https://api.telegram.org/%s/sendMessage" % telegram_key,
+        f"https://api.telegram.org/{telegram_key}/sendMessage",
         json={
             "chat_id": telegram_chat,
             "text": text,
