@@ -1,35 +1,34 @@
 import hmac
-import json
 import os
 
 import requests
-from flask import abort
+from werkzeug.exceptions import Forbidden, MethodNotAllowed
 
-webhook_secret = bytes(os.environ["WEBHOOK_SECRET"], "utf-8")
-telegram_key = os.environ.get("TELEGRAM_KEY")
-telegram_chat = os.environ.get("TELEGRAM_CHAT")
+webhook_secret = os.environ.get("WEBHOOK_SECRET")
+telegram_key = os.environ["TELEGRAM_KEY"]
+telegram_chat = os.environ["TELEGRAM_CHAT"]
 
 
 def github_hook(request):
     if request.method != "POST":
-        return abort(405)
+        raise MethodNotAllowed()
 
-    signature = request.headers.get("X-Hub-Signature")
-    if signature is None:
-        return abort(403)
+    if webhook_secret is not None:
+        signature = request.headers.get("X-Hub-Signature")
+        if signature is None:
+            raise Forbidden()
 
-    body = request.get_data()
-    digest = hmac.new(webhook_secret, body, "sha1").hexdigest()
+        digest = hmac.new(webhook_secret.encode("utf8"), request.get_data(), "sha1").hexdigest()
 
-    if not hmac.compare_digest("sha1=" + digest, signature):
-        return abort(403)
+        if not hmac.compare_digest("sha1=" + digest, signature):
+            raise Forbidden()
 
     github_event = request.headers.get("X-GitHub-Event")
 
     if github_event != "push":
         return "OK"
 
-    json_body = json.loads(body.decode("utf-8"))
+    json_body = request.get_json()
 
     commits = json_body["commits"]
     if len(commits) == 0:
