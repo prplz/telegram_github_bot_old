@@ -36,7 +36,8 @@ def github_hook(request):
         return "OK"
 
     # pusher
-    text = f'<a href="{json_body["sender"]["html_url"]}">{json_body["pusher"]["name"]}</a>'
+    sender = json_body["sender"]
+    text = f'<a href="{sender["html_url"]}">{sender["login"]}</a>'
 
     # how many commits
     if len(commits) == 1:
@@ -46,11 +47,13 @@ def github_hook(request):
 
     # branch
     branch = json_body["ref"].split("/")[-1]
-    if branch != "master":
-        text += f'branch <a href="{json_body["repository"]["url"]}/{branch}">{branch}</a> on '
+    repo = json_body["repository"]
 
-    # repo (link)
-    text += f'<a href="{json_body["repository"]["url"]}">{json_body["repository"]["full_name"]}</a>'
+    if branch != repo["default_branch"]:
+        text += f'branch <a href="{repo["url"]}/tree/{branch}">{branch}</a> on '
+
+    # repo
+    text += f'<a href="{repo["url"]}">{repo["full_name"]}</a>'
 
     # commits
     commits_end = 9 if len(commits) > 10 else len(commits)
